@@ -1,0 +1,5 @@
+.loaderz-07 {
+  width: 150px !important;  
+  height: 150px !important; 
+  border-width: 10px !important; 
+}
