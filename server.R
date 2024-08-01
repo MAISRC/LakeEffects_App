@@ -28,6 +28,135 @@ server = function(input, output, session) {
   allow_fetch_processing = reactiveVal(FALSE)
   
 
+output$methods = renderUI({
+  
+  if(input$pick_effect != "No selection") {
+    
+    if(input$pick_effect == "Calculate fetch") {
+      
+      selectInput("fetch_method", 
+                  label = "How'd you like to calculate fetch?", 
+                  choices = c("No selection", "By clicking a map", "By entering coordinates", "By uploading a CSV file"), 
+                  selected = "No selection",
+                  width = "100%")
+      
+   # session$sendCustomMessage("fade", list(id = "methods", action = "insert"))
+      
+    }
+    
+  } else {
+    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third")
+    NULL
+  #  session$sendCustomMessage("fade", list(id = "methods", action = "remove"))
+  }
+  
+})
+
+##HANDLER FOR MOVING PAST THE FIRST FETCH QUESTION--WHICH IS LAKE SEARCH OR DOWNLOAD CSV FILE.
+observeEvent(input$fetch_method, {
+  
+  if(isTruthy(input$fetch_method) &&
+     input$fetch_method != "No selection") {
+
+    if(input$fetch_method == "By clicking a map" |
+       input$fetch_method == "By entering coordinates") {
+      
+      removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("fetch_third")
+      
+      insertUI(selector = "#sidebar", 
+               where = "beforeEnd",
+               ui = div(id = "fetch_first",
+                        textInput("fetch_lake_search", 
+                                  "Search for a specific lake here.", 
+                                  value = "")
+                        )
+               )
+    } else {
+     
+    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("fetch_third")
+      
+      insertUI(selector = "#sidebar", 
+               where = "beforeEnd",
+               ui = div(id = "fetch_first",
+                        p("If you haven't already, download a template CSV file below."),
+                        downloadButton("fetch_template",
+                                       label = "Download"),
+                        br(),
+                        actionButton("fetch_first_proceed", "Got it!")
+               )
+      )
+      
+    }
+  } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third") }
+  
+})
+
+#HANDLER FOR DEALING WITH LAKE SEARCHES ON THE FETCH TAB.
+observeEvent(input$fetch_lake_search, {
+  
+  if(isTruthy(input$fetch_lake_search) && 
+     nchar(input$fetch_lake_search) > 2) {
+    
+    choices = lake_polys %>% 
+      st_drop_geometry() %>% 
+      select(DOW, map_label) %>% 
+      filter(grepl(input$fetch_lake_search, DOW, ignore.case = T) |
+               grepl(input$fetch_lake_search, map_label, ignore.case = T)) %>% 
+      head(200) %>% 
+      select(DOW, map_label)
+    
+    if(nrow(choices) > 0) {
+      
+      pretty = unlist(lapply(1:nrow(choices), function(x) {
+        
+        paste0(choices$map_label[x], " (DOW: ", choices$DOW[x], ")")
+        
+      }))
+      
+      choices_done = pull(choices, DOW)
+      names(choices_done) = pretty
+      choices_done = c("No selection" = "No selection", choices_done)
+      
+      removeUI("#fetch_second")
+      insertUI(selector = "#sidebar", 
+               where = "beforeEnd",
+               ui = div(id = "fetch_second", 
+                        selectInput(inputId = "fetch_lake_choice",
+                                    label = "Select a lake.", 
+                                    choices = choices_done)
+               ))
+      
+    } else { removeUI("#fetch_second"); removeUI("#fetch_third") }
+  } else { removeUI("#fetch_second"); removeUI("#fetch_third") }
+  
+})
+
+
+observeEvent(list(input$fetch_lake_choice, input$fetch_first_proceed), {
+  
+  browser()
+
+  if((isTruthy(input$fetch_lake_choice) ||
+     isTruthy(input$fetch_first_proceed)) &&
+     (input$fetch_lake_choice != "No selection" |
+      !is.null(input$fetch_first_proceed))) {
+    
+    removeUI("#fetch_third") 
+    
+    insertUI(selector = "#sidebar", 
+             where = "beforeEnd",
+             ui = div(id = "fetch_third", 
+                      numericInput("template_num_bearings", "Number of bearings to try.",
+                                   value = 36,
+                                   min = 1,
+                                   max = 180)
+             ))
+    
+  } else { removeUI("#fetch_third") }
+  
+})
+  
+  
 # Click to calculate fetch subtab -----------------------------------------
 
   

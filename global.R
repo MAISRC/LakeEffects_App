@@ -6,6 +6,7 @@ library(stringr)
 library(geosphere)
 library(waiter)
 library(DT)
+library(shinydisconnect)
 
 # lakes = st_read("H:\\Shared drives\\MAISRC\\Quantification, Data, and Computation\\Resources\\unneeded\\dnr_hydro_features_all.shp")
 # lakes2 = lakes %>%
