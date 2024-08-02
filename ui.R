@@ -29,8 +29,9 @@ ui = fluidPage(id = "whole_page",
   div(id = "both_panels",
     
     div(id = "sidebar",
-        h2("👇     Start here     👇"),
-        br(),
+        div(id = "startup-header", 
+            h2("👇     Start here     👇"),
+            br()),
       selectInput("pick_effect",
                   "Pick your effect", 
                   choices = c("No selection", "Calculate fetch"), 
@@ -48,7 +49,7 @@ ui = fluidPage(id = "whole_page",
       img(src = "jointlogoresized.png", class = "logo_pics"),
       br(),
       br(),
-      HTML("<i><h5>App Version 0.0.0. Last updated 8/1/24. Developed by Dr. Alex Bajcz, Quantitative Ecologist for MAISRC. Funding for this work was provided by the Minnesota Environment and Natural Resources Trust Fund as recommended by the Minnesota Aquatic Invasive Species Research Center (MAISRC) and the Legislative-Citizen Commission on Minnesota Resources (LCCMR) and also the State of Minnesota.</i></h5>")
+      HTML("<i><h5>App Version 0.0.1. Last updated 8/1/24. Developed by Dr. Alex Bajcz, Quantitative Ecologist for MAISRC. Funding for this work was provided by the Minnesota Environment and Natural Resources Trust Fund as recommended by the Minnesota Aquatic Invasive Species Research Center (MAISRC) and the Legislative-Citizen Commission on Minnesota Resources (LCCMR) and also the State of Minnesota.</i></h5>")
       )
       
     )

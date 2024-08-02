@@ -95,3 +95,55 @@ div#startup_main {
   margin-top: 10px;
   margin-bottom: 10px;
 }
+
+.btn-default {
+ color: #7a0019;
+ font-weight: bold;
+ font-size: 100%;
+ border: 2px solid black;
+ background-color: #FAFAFA; 
+ width: 100%;
+ height: 41.225px;
+ white-space: normal;
+ text-align: center;
+ text-decoration: none !important;
+ margin: 5px auto;
+}
+
+.btn-default:hover {
+  background-color: #900021;
+  color: white 
+}
+
+.btn.disabled {
+  color: gray;
+}
+
+a {
+  color: #e19900;
+  text-decoration: underline;
+}
+
+a:hover {
+  color: #ffb71e;
+}
+
+a:visited {
+  color: #e19900;
+}
+
+.control-label {
+  font-weight: bold;
+}
+
+div#sidebar>div, div#sidebar>div>div, div#fetch_fourth>div.form-group {
+  width: 100%;
+}
+
+#dropped_pin_coords, #pin_instructions {
+  max-width: 500px !important;
+}
+
+#enter2calc_table {
+  min-width: 400px;
+}
