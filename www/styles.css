@@ -103,7 +103,7 @@ div#startup_main {
   margin-bottom: 10px;
 }
 
-.btn-default {
+.btn-default:not(.btn-file) {
  color: #7a0019;
  font-weight: bold;
  font-size: 100%;
@@ -117,7 +117,7 @@ div#startup_main {
  margin: 5px auto;
 }
 
-.btn-default:hover {
+.btn-default:not(.btn-file):hover {
   background-color: #900021;
   color: white 
 }
@@ -147,7 +147,7 @@ div#sidebar>div, div#sidebar>div>div, div#fetch_fourth>div.form-group {
   width: 100%;
 }
 
-#dropped_pin_coords, #pin_instructions {
+#dropped_pin_coords, #pin_instructions, #upload_info, #template_submit-label {
   max-width: 500px !important;
 }
 

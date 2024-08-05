@@ -5,6 +5,8 @@ server = function(input, output, session) {
   most_recent_lake_choice = reactiveVal("00000000")
   first_enter_fourth = reactiveVal(TRUE)
   any_non0_bearing = reactiveVal()
+  first_logo_move = reactiveVal(TRUE)
+  first_move2submit = reactiveVal(TRUE)
   
   
   pin_map_waiter = Waiter$new(id = "fetch_fourth", 
@@ -13,11 +15,6 @@ server = function(input, output, session) {
                               color = "darkred", 
                               fadeout = TRUE)
 
-  entire_template2calc_waiter = Waiter$new(id = "entire_template2calc",
-                                        hide_on_render = T, 
-                                        html = spin_loaders(7, color = "lightblue"), 
-                                        color = "darkred", 
-                                        fadeout = TRUE)
   enter2calc_df = reactiveVal(data.frame(lat = numeric(0), 
                                          lng = numeric(0), 
                                          lake = character(0)))
@@ -43,7 +40,7 @@ output$methods = renderUI({
     }
     
   } else {
-    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
+    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth"); removeUI("#submitted_DT_div")
     NULL
   #  session$sendCustomMessage("fade", list(id = "methods", action = "remove"))
   }
@@ -92,7 +89,9 @@ observeEvent(input$fetch_method, {
   } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth") }
   
   removeUI("#calced_df_div")
+  removeUI("#submitted_DT_div")
   first_enter_fourth(TRUE)
+  first_move2submit(TRUE)
   
 })
 
@@ -250,12 +249,14 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
         removeUI("#fetch_fourth"); output$click2calc_lake = renderLeaflet({}) 
       } else {
 
-     removeUI("#startup_main")
-        
-     insertUI(selector = ("#sidebar"), where = "beforeEnd", 
-                 ui = tags$img(src = "logo1resized.png",
-                               alt = "The LakeEffects app logo",
-                               class = "logo_pics"))
+        if(first_logo_move() == TRUE) {
+          removeUI("#startup_main")
+          insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+                   ui = tags$img(src = "logo1resized.png",
+                                 alt = "The LakeEffects app logo",
+                                 class = "logo_pics"))
+          first_logo_move(FALSE)
+        }
 
      insertUI(selector = "#main-panel",
                where = "beforeEnd",
@@ -301,12 +302,14 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
        nrow(enter2calc_df()) == 0 &&
        first_enter_fourth() == TRUE) { 
       
-      removeUI("#startup_main")
-      
-      insertUI(selector = ("#sidebar"), where = "beforeEnd", 
-               ui = tags$img(src = "logo1resized.png",
-                             alt = "The LakeEffects app logo",
-                             class = "logo_pics"))
+      if(first_logo_move() == TRUE) {
+        removeUI("#startup_main")
+        insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+                 ui = tags$img(src = "logo1resized.png",
+                               alt = "The LakeEffects app logo",
+                               class = "logo_pics"))
+        first_logo_move(FALSE)
+      }
       
       first_enter_fourth(FALSE)
       
@@ -333,7 +336,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                         actionButton("submit_entered_pt", 
                                      "Add point to table"),
                         htmlOutput("invalid_pt_warn"),
-                        br(), #^^^^
+                        br(),
                         dataTableOutput("enter2calc_table"),
                         actionButton("remove_selected", 
                                      "Remove selected rows")
@@ -367,6 +370,27 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
        input$fetch_method != "No selection" &&
        input$fetch_method == "By uploading a CSV file") {
       
+      removeUI("#submitted_results_div") #WIPE RESULTS, IF ANY, IF THEY ARE SCREWING AROUND WITH THE NUMBER OF BEARINGS. 
+      
+      if(first_logo_move() == TRUE) {
+        removeUI("#startup_main")
+      insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+               ui = tags$img(src = "logo1resized.png",
+                             alt = "The LakeEffects app logo",
+                             class = "logo_pics"))
+      first_logo_move(FALSE)
+      }
+      #^^^^
+      if(first_move2submit() == TRUE) {
+      insertUI(selector = "#main-panel", 
+               where = "beforeEnd",
+               ui = div(id = "fetch_fourth", 
+                        fileInput(inputId = "template_submit", 
+                                  "Upload your template file here. Make sure it is a .csv file and that it contains only columns called \"lat\", \"lng\", \"lake\", just as in the template file.",
+                                   accept = ".csv")
+               ))
+        first_move2submit(FALSE)
+      }
       
     }
     
@@ -808,26 +832,28 @@ observeEvent(input$calc_fetch_button, {
   })
   
   ##OBSERVER FOR VALIDATING INPUTTED DATA
-  observeEvent(input$submit_template_CSV, {
+  observeEvent(input$template_submit, {
     
-    req(isTruthy(input$submit_template_CSV))
+    req(input$template_submit)
+    req(grepl(".csv", input$template_submit$datapath))
+    removeUI("#submitted_DT_div")
+    
+    #^^^^
 
-    df = read.csv(input$submit_template_CSV$datapath)
+    df = read.csv(input$template_submit$datapath)
     
+    rows_check = nrow(df) > 0
+
     names_check = all(names(df) == c("lat", "lng", "lake"))
     
-    if(names_check == TRUE) {
+    if(names_check == TRUE && rows_check == TRUE) {
       
-      df$lake[nchar(df$lake) == 7] = paste0("0", df$lake[nchar(df$lake) == 7]) #REPAIR DOWS
+      df$lake[nchar(df$lake) == 7] = 
+        paste0("0", df$lake[nchar(df$lake) == 7]) #REPAIR ANY DOWS
       
       these_lakes = lake_polys[lake_polys$DOW %in% unique(df$lake),]
       these_lakes = st_transform(these_lakes, crs = 4326)
-      
-      df = df[-c(2L, 5L, 8L, 17L, 20L, 22L, 33L, 35L, 36L, 40L, 42L, 43L, 44L, 
-                     47L, 49L, 62L, 71L, 72L, 79L, 82L, 99L, 101L, 105L, 106L, 107L, 
-                     108L, 109L, 113L, 114L, 119L, 127L, 129L, 131L, 132L, 134L, 138L, 
-                     143L, 146L), ] #**TEST!!
-      
+
       lake_pt_inter_check = unlist(lapply(1:nrow(df), function(x) {
         
         lengths(st_intersects(these_lakes[these_lakes$DOW == df$lake[x], ], 
@@ -837,9 +863,57 @@ observeEvent(input$calc_fetch_button, {
       
       if(any(lake_pt_inter_check == FALSE)) {
         
+        #SOME OF THE POINTS SUBMITTED DON'T INTERSECT THE LAKES THEY ARE SUPPOSED TO INTERSECT.
+        insertUI(selector = "#fetch_fourth", 
+                 where = "beforeEnd",
+                 ui = div(id = "submitted_DT_div",
+                          p("The data you uploaded are shown below. However, some of the points (those marked in pink) do not lie within their specified lake's polygon. Please correct these points to proceed.", id = "upload_info"),
+                          dataTableOutput("submitted_DT")))
+        
+        output$submitted_DT = renderDT({
+          
+          df$valid_coords = lake_pt_inter_check
+          
+          datatable(df, 
+                    selection = 'none', 
+                    escape = FALSE,
+                    colnames = c("Latitude", "Longitude", "Lake<br>DOW #", "Valid<br>coordinates?"),
+                    options = list(info = FALSE,
+                                   ordering = FALSE,
+                                   searching = FALSE,
+                                   lengthChange = FALSE)) %>% 
+            formatStyle(target = "row", 
+                        columns = "valid_coords",
+                        backgroundColor = styleEqual(
+                          levels = df$valid_coords, 
+                          values = ifelse(df$valid_coords == FALSE, "pink", "white")
+                        ))
+          
+        })
+        
         allow_fetch_processing(FALSE)
         
       } else {
+        
+        insertUI(selector = "#fetch_fourth", 
+                 where = "beforeEnd",
+                 ui = div(id = "submitted_DT_div",
+                          p("The data you uploaded are shown below", id = "upload_info"),
+                          dataTableOutput("submitted_DT"),
+                          actionButton("template_go", 
+                                       "Calculate fetch!")))
+        
+        output$submitted_DT = renderDT({
+          
+        datatable(df, 
+                  selection = 'none', 
+                  colnames = c("Latitude", "Longitude", "Lake DOW #"),
+                  options = list(info = FALSE,
+                                 ordering = FALSE,
+                                 searching = FALSE,
+                                 lengthChange = FALSE))
+          
+        })
         
         allow_fetch_processing(TRUE)
         
@@ -847,38 +921,34 @@ observeEvent(input$calc_fetch_button, {
       
     } else {
       
-      allow_fetch_processing(TRUE)
+     #TELL FOLKS THEY CAN'T PROCEED BECAUSE THEY ARE MISSING COLUMNS OF A SPECIFIC NAME.
+      
+      insertUI(selector = "#fetch_fourth", 
+               where = "beforeEnd",
+               ui = div(id = "submitted_DT_div",
+                        p("The data you uploaded are lacking one or more columns the app is looking for! Please consult the template file, available in the sidebar, for details. Alternatively, you accidentally submitted a file with no data in it.", id = "upload_info")))
+      
+      allow_fetch_processing(FALSE)
       
     }
     
   })
   
-  observeEvent(input$template_calc_fetch, {
-    
-    browser()
-    
-    if(allow_fetch_processing() == TRUE) {
+  observeEvent(input$template_go, {
+
+      pin_map_waiter$show() 
       
-      df = read.csv(input$submit_template_CSV$datapath)
-      df$lake[nchar(df$lake) == 7] = paste0("0", df$lake[nchar(df$lake) == 7]) #REPAIR DOWS
-      current.lake.polys = lake_polys[lake_polys$DOW %in% unique(df$lake),]
+      pt_df = read.csv(input$template_submit$datapath)
+      pt_df$lake[nchar(pt_df$lake) == 7] = paste0("0", pt_df$lake[nchar(pt_df$lake) == 7]) #REPAIR DOWS
+      current.lake.polys = lake_polys[lake_polys$DOW %in% unique(pt_df$lake),]
       current.lake.polys = st_transform(current.lake.polys, crs = 4326)
-      
-      if(nrow(df) > 0) { ##THIS ONE NEEDS TO HAPPEN SOONER.
-        
-        #180 SHOULD BE DIVISIBLE BY NUM BEARINGS.
-        if(180 %% input$template_num_bearings == 0) {
-          
-          entire_template2calc_waiter$show()
-          
+
           #CACHE BEARINGS AND DEGREE STEP LENGTHS 
-          ttl_bearings = input$template_num_bearings
+          ttl_bearings = as.numeric(input$fetch_num_bearings)
           step_size = 180/ttl_bearings
           bearings2try = seq(-180, 180, by = step_size)
           bearings2try = bearings2try[-length(bearings2try)]
-          
-          pt_df = df
-          
+
           pt_df$uniq_id = seq(1, nrow(pt_df), 1)
           
           #EXPAND THE TABLE ACCORDING TO THE NUMBER OF BEARINGS VIA WITCHCRAFT
@@ -960,59 +1030,53 @@ observeEvent(input$calc_fetch_button, {
           pt_df3$total.length = round(pt_df3$total.length, 1)
           pt_df3$max_length = round(pt_df3$max_length, 2)
           
+          insertUI(selector = "#fetch_fourth", 
+                   where = "beforeEnd",
+                   ui = div(id = "submitted_results_div",
+                            p("Your calculated fetches are below.", id = "upload_info"),
+                            dataTableOutput("calced_template_df"),
+                            downloadButton("template_outputs")))
+          
+          pt_df4 = pt_df3 %>% 
+            select(-uniq_id, -bearing_lat, -bearing_lng, 
+                   -length, -total.length) %>% 
+            filter(is_max == TRUE) %>% 
+            select(-is_max) %>% 
+            distinct(lat, lng, lake, bearing, max_length) %>% 
+            group_by(lat, lng, lake) %>% 
+            mutate(bearing_angles = paste0(bearing, collapse = ", ")) %>% 
+            ungroup() %>% 
+            distinct(lat, lng, lake, bearing_angles, max_length) %>% 
+            rename(
+              `Point<br>latitude` = lat,
+              `Point<br>longitude` = lng,
+              `Lake<br>DOW` = lake,
+              `Bearing<br>angles` = bearing_angles,
+              `Point's<br>fetch (m)` = max_length,
+            )
+          
           output$calced_template_df = renderDT({
             
-            pt_df3 %>% rename(
-              `Point latitude` = lat,
-              `Point longitude` = lng,
-              `Lake DOW` = lake,
-              `Bearing angle` = bearing,
-              `Bearing point latitude` = bearing_lat,
-              `Bearing point longitude` = bearing_lng,
-              `Segment length (m)` = length,
-              `Segment + anti-segment length (m)` = total.length,
-              `Point's fetch (m)` = max_length,
-              `Fetch segment?` = is_max
-            ) %>% 
-              select(-uniq_id) %>% 
-              datatable() %>% 
-              formatStyle(target = "row", 
-                          columns = "Fetch segment?",
-                          backgroundColor = styleEqual(
-                            levels = pt_df3$is_max, 
-                            values = ifelse(pt_df3$is_max == TRUE, "darkred", "white")
-                          ),
-                          color = styleEqual(
-                            levels = pt_df3$is_max, 
-                            values = ifelse(pt_df3$is_max == TRUE, "white", "black")
-                          ),
-                          fontWeight = styleEqual(
-                            levels = pt_df3$is_max, 
-                            values = ifelse(pt_df3$is_max == TRUE, "bold", "normal")
-                          ))
+            datatable(pt_df4, escape = FALSE, 
+                        selection = "none",
+                        options = list(info = FALSE,
+                                       lengthChange = FALSE))
             
           })
           
-          entire_template2calc_waiter$hide()
+          pt_df5 = pt_df4
+          colnames(pt_df5) = gsub("<br>", "", colnames(pt_df4))
           
           output$template_outputs = 
             downloadHandler(filename = "lakeEffects_fetch_outputs.csv", 
                             function(file) {
                               
-                              write.csv(pt_df3, file, row.names = FALSE)          
+                              write.csv(pt_df5, file, row.names = FALSE)          
                               
                             })
           
-          
-        }
-        
-      }
-      
-    } else {
-      
-      
-      
-    }
+          pin_map_waiter$hide()
+
     
   })
   
