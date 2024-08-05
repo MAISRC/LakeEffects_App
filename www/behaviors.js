@@ -13,3 +13,20 @@
         }, 500);
       }
     });
+
+// Prevent invalid characters in the input widget
+$(document).on("keydown", "#fetch_lake_search", function (e) {
+  // Define allowed keys
+  const allowedKeys = [
+    ...Array(26).fill().map((_, i) => String.fromCharCode(i + 65)), // A-Z
+    ...Array(26).fill().map((_, i) => String.fromCharCode(i + 97)), // a-z
+    ...Array(10).fill().map((_, i) => String.fromCharCode(i + 48)), // 0-9
+    "Backspace", "Tab", "ArrowLeft", "ArrowRight", "Delete", "Shift", "Control", "Alt"
+  ];
+
+  // If the key is not allowed, prevent the default action
+  if (!allowedKeys.includes(e.key)) {
+    e.preventDefault();
+    return false;
+  }
+});

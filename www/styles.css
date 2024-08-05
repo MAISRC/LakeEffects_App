@@ -22,6 +22,7 @@ body {
         width: 100%;
         height: auto;
         overflow-y: auto;
+        margin-bottom: 20vh;
       }
       
       #main-panel {
@@ -38,6 +39,8 @@ body {
       @media (min-width: 1264px) {
         #sidebar {
           height: 88vh;
+          max-height: 88vh;
+          overflow-y: auto;
           width: 24%;
           float: left;
         }
@@ -45,14 +48,18 @@ body {
         #main-panel {
           display: flex;
           width: 74%;
+          max-width: 75%;
           margin-left: 24%;
           height: 88vh;
-          align-items: center;
-          justify-content: center;
+          max-height: 88vh;
+         /* align-items: center; */
+         overflow-y: scroll;
+         justify-content: center;
         }
         
         .logo_pics {
-          max-width: 800px;
+          max-width: 100%;
+          height: auto;
         }
       }
       

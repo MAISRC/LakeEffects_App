@@ -1,9 +1,11 @@
 server = function(input, output, session) {
   
   #REACTIVES
-  # pin_df = reactiveVal(lake_polys[1,])
   most_recent_bearing_num = reactiveVal(314)
   most_recent_lake_choice = reactiveVal("00000000")
+  first_enter_fourth = reactiveVal(TRUE)
+  any_non0_bearing = reactiveVal()
+  
   
   pin_map_waiter = Waiter$new(id = "fetch_fourth", 
                               hide_on_render = T, 
@@ -11,11 +13,6 @@ server = function(input, output, session) {
                               color = "darkred", 
                               fadeout = TRUE)
 
-  entire_enter2calc_waiter = Waiter$new(id = "entire_enter2calc",
-                                        hide_on_render = T, 
-                                        html = spin_loaders(7, color = "lightblue"), 
-                                        color = "darkred", 
-                                        fadeout = TRUE)
   entire_template2calc_waiter = Waiter$new(id = "entire_template2calc",
                                         hide_on_render = T, 
                                         html = spin_loaders(7, color = "lightblue"), 
@@ -94,11 +91,14 @@ observeEvent(input$fetch_method, {
     }
   } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth") }
   
+  removeUI("#calced_df_div")
+  first_enter_fourth(TRUE)
+  
 })
 
 #HANDLER FOR DEALING WITH LAKE SEARCHES ON THE FETCH TAB.
 observeEvent(input$fetch_lake_search, priority = 2, {
-  
+
   if(isTruthy(input$fetch_lake_search) && 
      nchar(input$fetch_lake_search) > 2) {
     
@@ -122,7 +122,12 @@ observeEvent(input$fetch_lake_search, priority = 2, {
       names(choices_done) = pretty
       choices_done = c("No selection" = "No selection", choices_done)
       
-      removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
+      removeUI("#fetch_second"); removeUI("#fetch_third");
+      
+      if(isTruthy(input$fetch_method) &&
+         input$fetch_method != "By entering coordinates") {
+      removeUI("#fetch_fourth")
+      }
       
       insertUI(selector = "#sidebar", 
                where = "beforeEnd",
@@ -132,13 +137,25 @@ observeEvent(input$fetch_lake_search, priority = 2, {
                                     choices = choices_done)
                ))
       
-    } else { removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth") }
-  } else { removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth"); most_recent_lake_choice("00000000") }
+    } else { removeUI("#fetch_second"); removeUI("#fetch_third")
+      if(isTruthy(input$fetch_method) &&
+         input$fetch_method != "By entering coordinates") {
+        removeUI("#fetch_fourth")
+      }   
+}
+  } else { removeUI("#fetch_second"); removeUI("#fetch_third"); most_recent_lake_choice("00000000") 
+    if(isTruthy(input$fetch_method) &&
+       input$fetch_method != "By entering coordinates") {
+      removeUI("#fetch_fourth")
+    }
+    }
   
   most_recent_bearing_num("No selection")
   output$dropped_pin_coords = renderText({})
   output$report_pin_fetch = renderText({})
-
+  removeUI("#calced_df_div")
+  
+  
 })
 
 
@@ -147,22 +164,42 @@ observeEvent(input$fetch_lake_choice, {
   if(isTruthy(input$fetch_lake_choice) &&
      (input$fetch_lake_choice != "No selection")) {
     
-    removeUI("#fetch_third"); removeUI("#fetch_fourth")
+    removeUI("#fetch_third")
     
+    if(isTruthy(input$fetch_method) &&
+       input$fetch_method != "By entering coordinates") {
+      removeUI("#fetch_fourth")
+    }
+    
+    #IF THEY HAVE ALREADY SELECTED A BEARING NUMBER, LET'S TRY TO MAINTAIN THAT ON THE ENTER-TO-CALC METHOD.
+      if(input$fetch_method == "By entering coordinates" &&
+         isTruthy(any_non0_bearing())) {
+        selected2use = any_non0_bearing() 
+      } else {
+        selected2use = "No selection"
+      }
+
     insertUI(selector = "#sidebar", 
              where = "beforeEnd",
              ui = div(id = "fetch_third", 
                       selectInput("fetch_num_bearings", 
                                   "Select a number of bearings to try.",
                                    choices = c("No selection", "180", "90", "60", "45", "36", "30", "20", "18", "15", "12", "10", "9", "6", "5", "4", "3", "2", "1"), 
-                                  selected = "No selection")
+                                  selected = selected2use)
              ))
-    
-  } else { removeUI("#fetch_third"); removeUI("#fetch_fourth"); output$click2calc_lake = renderLeaflet({}) }
+      
+  } else { removeUI("#fetch_third"); output$click2calc_lake = renderLeaflet({})
+  if(isTruthy(input$fetch_method) &&
+     input$fetch_method != "By entering coordinates") {
+    removeUI("#fetch_fourth")
+    }
+   }
   
   most_recent_bearing_num("No selection")
   output$dropped_pin_coords = renderText({})
   output$report_pin_fetch = renderText({})
+  
+  removeUI("#calced_df_div")
   
 })
 
@@ -187,6 +224,9 @@ observeEvent(input$fetch_first_proceed, {
   
   most_recent_bearing_num("No selection")
   
+  removeUI("#calced_df_div")
+  
+  
 })
 
 
@@ -204,11 +244,18 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
 
       #IF THEY ARE FIDDLING WITH THE LAKE CHOICE SELECTOR, CLEAR THE MAP OUT
       if(most_recent_lake_choice() != "No selection" && 
-        most_recent_lake_choice() != input$fetch_lake_choice) {
+        most_recent_lake_choice() != input$fetch_lake_choice &&
+        isTruthy(input$fetch_method) &&
+        input$fetch_method != "By entering coordinates") {
         removeUI("#fetch_fourth"); output$click2calc_lake = renderLeaflet({}) 
       } else {
 
      removeUI("#startup_main")
+        
+     insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+                 ui = tags$img(src = "logo1resized.png",
+                               alt = "The LakeEffects app logo",
+                               class = "logo_pics"))
 
      insertUI(selector = "#main-panel",
                where = "beforeEnd",
@@ -245,15 +292,23 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       }
 
     }
-    
-    
+
     if(isTruthy(input$fetch_method) &&
        input$fetch_method != "No selection" &&
        input$fetch_method == "By entering coordinates" &&
        input$fetch_lake_choice != "No selection" &&
-       input$fetch_num_bearings != "No selection") {
+       input$fetch_num_bearings != "No selection" &&
+       nrow(enter2calc_df()) == 0 &&
+       first_enter_fourth() == TRUE) { 
       
       removeUI("#startup_main")
+      
+      insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+               ui = tags$img(src = "logo1resized.png",
+                             alt = "The LakeEffects app logo",
+                             class = "logo_pics"))
+      
+      first_enter_fourth(FALSE)
       
       tmp1 = lake_polys %>% 
         filter(DOW == input$fetch_lake_choice)
@@ -286,6 +341,27 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       
     }
     
+    #THIS IS NEEDED SO THAT IF USERS HAVE SWITCHED LAKES THEY ARE GIVEN DEFAULT VALUES THAT ARE ACTUALLY LIKELY TO BE INSIDE THE LAKE.
+    if(first_enter_fourth() == FALSE) {
+      
+      tmp1 = lake_polys %>% 
+        filter(DOW == input$fetch_lake_choice)
+      
+      bounds = round(unname(st_bbox(tmp1)), 4)
+      
+      updateNumericInput(session, 
+                   "enter2calc_lat", 
+                   min = bounds[2], 
+                   value = round(mean(c(bounds[4],bounds[2])), 4),
+                   max = bounds[4])
+      updateNumericInput(session, 
+                  "enter2calc_lng", 
+                   min = bounds[1], 
+                   value = round(mean(c(bounds[1],bounds[3])), 4),
+                   max = bounds[3])
+      
+    }
+    
     
     if(isTruthy(input$fetch_method) &&
        input$fetch_method != "No selection" &&
@@ -294,12 +370,27 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       
     }
     
-  } else { removeUI("#fetch_fourth")
+  } else { 
+    
+    if(isTruthy(input$fetch_method) &&
+       input$fetch_method != "By entering coordinates") {
+      removeUI("#fetch_fourth")
+    }
     output$click2calc_lake = renderLeaflet({}) 
     }
   
   most_recent_bearing_num(input$fetch_num_bearings) #Set this to the most recent outcome
   most_recent_lake_choice(input$fetch_lake_choice)
+  
+  #FOR MEMORY, LET'S REMEMBER ANY NON-ZERO BEARING NUMBER THEY HAVE ALREADY CHOSEN ON THE ENTER 2 CALC PATH.
+  if(isTruthy(input$fetch_method) &&
+     isTruthy(input$fetch_num_bearings) &&
+     input$fetch_method == "By entering coordinates" &&
+     input$fetch_num_bearings != "No selection") {
+    any_non0_bearing(input$fetch_num_bearings)
+  }
+  
+  removeUI("#calced_df_div")
   
 })
 
@@ -339,7 +430,7 @@ observeEvent(input$click2calc_lake_click, {
            "Pin longitude: ", round(input$click2calc_lake_click$lng, 4))
 
   })
-  
+
   insertUI("#fetch_fourth", 
            ui = div(id = "fetch_action", 
                     actionButton("calc_fetch_button", 
@@ -490,7 +581,7 @@ observeEvent(input$calc_fetch_button, {
 
     if(isTruthy(input$enter2calc_lat) &&
        isTruthy(input$enter2calc_lng)) { #VALS ARE REAL
-      
+
       pt = st_as_sf(data.frame(lng = input$enter2calc_lng, 
                                lat = input$enter2calc_lat), 
                     coords = c("lng", "lat"),
@@ -524,7 +615,9 @@ observeEvent(input$calc_fetch_button, {
         
       })
       
-   }
+    }
+    
+    removeUI("#calced_df_div")
     
   })
   
@@ -533,6 +626,22 @@ observeEvent(input$calc_fetch_button, {
     
     dataTableProxy("enter2calc_table") %>% 
       replaceData(enter2calc_df())
+    
+    if(nrow(enter2calc_df()) == 1) { #ANY OTHER NUMBER HERE AND WE'D GET UI DUPLICATIONS
+      
+      insertUI(selector = "#fetch_fourth", 
+               ui = div(id = "enter2calc_godiv",
+                        actionButton("enter2calc_go", "Calculate fetch!")))
+      
+    } else {
+      
+      if(nrow(enter2calc_df()) == 0) { #TO MAKE SURE IT GOES BACK AWAY IF THERE'S NOTHING TO SUBMIT.
+      removeUI("#enter2calc_godiv")
+      }
+      
+    }
+    
+    removeUI("#calced_df_div")
     
   })
   
@@ -546,20 +655,17 @@ observeEvent(input$calc_fetch_button, {
     dataTableProxy("enter2calc_table") %>% 
       replaceData(enter2calc_df())
     
+    removeUI("#calced_df_div")
+    
   })
   
   ##OBSERVER WATCHING CALC FETCH BUTTON
-  observeEvent(input$enter2calc_calc, {
-    
-    if(nrow(enter2calc_df()) > 0) {
-      
-      #180 SHOULD BE DIVISIBLE BY NUM BEARINGS.
-      if(180 %% input$enter_num_bearings == 0) {
-        
-        entire_enter2calc_waiter$show()
+  observeEvent(input$enter2calc_go, {
+
+        pin_map_waiter$show()
 
         #CACHE BEARINGS AND DEGREE STEP LENGTHS 
-        ttl_bearings = input$enter_num_bearings
+        ttl_bearings = as.numeric(input$fetch_num_bearings)
         step_size = 180/ttl_bearings
         
         bearings2try = seq(-180, 180, by = step_size)
@@ -651,45 +757,41 @@ observeEvent(input$calc_fetch_button, {
         pt_df3$total.length = round(pt_df3$total.length, 1)
         pt_df3$max_length = round(pt_df3$max_length, 2)
         
-      
+        insertUI(selector = "#fetch_fourth", 
+                 ui = div(id = "calced_df_div",
+                          dataTableOutput("calced_entered_df")))
+
         output$calced_entered_df = renderDT({
           
-          pt_df3 %>% rename(
-            `Point latitude` = lat,
-            `Point longitude` = lng,
-            `Lake DOW` = lake,
-            `Bearing angle` = bearing,
-            `Bearing point latitude` = bearing_lat,
-            `Bearing point longitude` = bearing_lng,
-            `Segment length (m)` = length,
-            `Segment + anti-segment length (m)` = total.length,
-            `Point's fetch (m)` = max_length,
-            `Fetch segment?` = is_max
+          pt_df3 %>% 
+            select(-uniq_id, -bearing_lat, -bearing_lng, 
+                   -length, -total.length) %>% 
+            filter(is_max == TRUE) %>% 
+            select(-is_max) %>% 
+            distinct(lat, lng, lake, bearing, max_length) %>% 
+            group_by(lat, lng, lake) %>% 
+            mutate(bearing_angles = paste0(bearing, collapse = ", ")) %>% 
+            ungroup() %>% 
+            distinct(lat, lng, lake, bearing_angles, max_length) %>% 
+            rename(
+            `Point<br>latitude` = lat,
+            `Point<br>longitude` = lng,
+            `Lake<br>DOW` = lake,
+            `Bearing<br>angles` = bearing_angles,
+            `Point's<br>fetch (m)` = max_length,
           ) %>% 
-            select(-uniq_id) %>% 
-            datatable() %>% 
-            formatStyle(target = "row", 
-                        columns = "Fetch segment?",
-                        backgroundColor = styleEqual(
-                          levels = pt_df3$is_max, 
-                          values = ifelse(pt_df3$is_max == TRUE, "darkred", "white")
-                        ),
-                        color = styleEqual(
-                          levels = pt_df3$is_max, 
-                          values = ifelse(pt_df3$is_max == TRUE, "white", "black")
-                        ),
-                        fontWeight = styleEqual(
-                          levels = pt_df3$is_max, 
-                          values = ifelse(pt_df3$is_max == TRUE, "bold", "normal")
-                        ))
+            datatable(escape = FALSE, 
+                      selection = "none",
+                      options = list(info = FALSE,
+                                     ordering = FALSE,
+                                     searching = FALSE,
+                                     paging = FALSE, 
+                                     lengthChange = FALSE))
           
         })
-      
-      entire_enter2calc_waiter$hide()
-      
-      }
+        
+        pin_map_waiter$hide()
     
-     }
   })
   
 
