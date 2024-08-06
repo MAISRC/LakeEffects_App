@@ -32,3 +32,29 @@ calculate_bearing_point <- function(start_point, bearing, distance) {
   dest_point <- destPoint(start_point, bearing, distance)
   return(dest_point)
 }
+
+#CREATING A LOOKUP TABLE FOR CONVERTING BEARING ANGLES TO CARDINAL DIRECTIONS
+bearing_lbs = c(seq(from = -11.25, to = 168.75, by = 22.5), seq(from = -168.75, to = -33.75, by = 22.5))
+bearing_ubs = c(seq(from = 11.25, to = 168.75, by = 22.5), seq(from = -168.75, to = -11.25, by = 22.5)) 
+bearing_dirs = c("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
+bearing_trans = data.frame(bearing_lbs, bearing_ubs, bearing_dirs)
+#SOUTH IS A LITTLE WEIRD, AS IT STRADDLES -180/180.
+bearing_trans[9,] = c(168.75, 180, "S")
+bearing_trans[17,] = c(-180, -168.75, "S")
+#SO IS NORTH
+bearing_trans[1,] = c(-11.25, 0, "N")
+bearing_trans[18, ] = c(0, 11.25, "N")
+
+
+bearing_funct = function(bearing) {
+  
+  bearing_dirs = c("S", "SSE", "SE", "ESE", "E", "ENE", "NE", "NNE", "N", "NNW", "NW", "WNW", "W", "WSW", "SW", "SSW")
+  
+  if(bearing > 168.75 || bearing <= -168.75) { return("S") } else {
+    curr = 146.25
+    for(i in 2:16) {
+      if(bearing > curr) {return(bearing_dirs[i])}
+      curr = curr - 22.5
+    }
+  }
+}

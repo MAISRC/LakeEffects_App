@@ -53,7 +53,7 @@ body {
           height: 88vh;
           max-height: 88vh;
          /* align-items: center; */
-         overflow-y: scroll;
+         overflow-y: auto;
          justify-content: center;
         }
         

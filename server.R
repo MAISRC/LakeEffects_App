@@ -7,6 +7,7 @@ server = function(input, output, session) {
   any_non0_bearing = reactiveVal()
   first_logo_move = reactiveVal(TRUE)
   first_move2submit = reactiveVal(TRUE)
+  prev_enter_df_nrows = reactiveVal()
   
   
   pin_map_waiter = Waiter$new(id = "fetch_fourth", 
@@ -72,7 +73,7 @@ observeEvent(input$fetch_method, {
                )
     } else {
      
-    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("fetch_third"); removeUI("#fetch_fourth")
+    removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
       
       insertUI(selector = "#sidebar", 
                where = "beforeEnd",
@@ -86,7 +87,11 @@ observeEvent(input$fetch_method, {
       )
       
     }
-  } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth") }
+  } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
+    enter2calc_df = reactiveVal(data.frame(lat = numeric(0), 
+                                           lng = numeric(0), 
+                                           lake = character(0))) #GET BACK TO A STARTING POINT HERE.
+    }
   
   removeUI("#calced_df_div")
   removeUI("#submitted_DT_div")
@@ -222,6 +227,7 @@ observeEvent(input$fetch_first_proceed, {
   } else { removeUI("#fetch_third"); removeUI("#fetch_fourth") }
   
   most_recent_bearing_num("No selection")
+  first_move2submit(TRUE) #I BELIEVE THIS IS NEEDED TO ENSURE THAT HITTING THE BUTTON AFTER PICKING THIS SUBMETHOD AND AFTER BRINGING UP FETCH_FOURTH ONCE BUT BEFORE RESELECTING A BEARING NUMBER WILL STILL EVENTUALLY BRING UP FETCH_FOURTH.
   
   removeUI("#calced_df_div")
   
@@ -249,9 +255,10 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
         removeUI("#fetch_fourth"); output$click2calc_lake = renderLeaflet({}) 
       } else {
 
+        #MOVE THE LOGO IF THIS IS THE FIRST TIME THEY'VE ADVANCED THIS FAR.
         if(first_logo_move() == TRUE) {
           removeUI("#startup_main")
-          insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+          insertUI(selector = ("#sidebar"), where = "afterBegin", 
                    ui = tags$img(src = "logo1resized.png",
                                  alt = "The LakeEffects app logo",
                                  class = "logo_pics"))
@@ -293,18 +300,23 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       }
 
     }
+    #REMOVE ANY RESULTS THEY'VE PRODUCED SO FAR ON THE MAP SUBMETHOD IF THEY ARE FIDDLING WITH THE LAKE OR BEARINGS INPUTS.
+    if(isTruthy(input$fetch_method) &&
+       input$fetch_method == "By clicking a map") {
+      
+      output$report_pin_fetch = renderText({})
+    }
 
     if(isTruthy(input$fetch_method) &&
        input$fetch_method != "No selection" &&
        input$fetch_method == "By entering coordinates" &&
        input$fetch_lake_choice != "No selection" &&
        input$fetch_num_bearings != "No selection" &&
-       nrow(enter2calc_df()) == 0 &&
        first_enter_fourth() == TRUE) { 
       
       if(first_logo_move() == TRUE) {
         removeUI("#startup_main")
-        insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+        insertUI(selector = ("#sidebar"), where = "afterBegin", 
                  ui = tags$img(src = "logo1resized.png",
                                alt = "The LakeEffects app logo",
                                class = "logo_pics"))
@@ -342,7 +354,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                                      "Remove selected rows")
                         ))
       
-    }
+    } 
     
     #THIS IS NEEDED SO THAT IF USERS HAVE SWITCHED LAKES THEY ARE GIVEN DEFAULT VALUES THAT ARE ACTUALLY LIKELY TO BE INSIDE THE LAKE.
     if(first_enter_fourth() == FALSE) {
@@ -365,7 +377,18 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       
     }
     
-    
+    #IF A USER ADDS POINTS, MOVES THE BEARINGS SELECTOR TO NO SELECTION, THEN RESTORES IT TO A VALUE, WE HAVE TO PUT THE GO BUTTON BACK (VERY SPECIFIC CIRCUMSTANCES!)
+      if(isTruthy(input$fetch_method) &&
+         isTruthy(input$fetch_num_bearings) &&
+         input$fetch_method == "By entering coordinates" &&
+         input$fetch_num_bearings != "No selection" &&
+         nrow(enter2calc_df()) > 0) {
+        removeUI("#enter2calc_godiv") #THERE ARE ALSO CIRCUMSTANCES YOU'D END UP HERE AND THERE ALREADY IS ONE BUTTON, SO THIS ENSURES WE STAY AT 1 IN THOSE CIRCUMSTANCES.
+        insertUI(selector = "#fetch_fourth", 
+                 ui = div(id = "enter2calc_godiv",
+                          actionButton("enter2calc_go", "Calculate fetch!")))
+      }
+      
     if(isTruthy(input$fetch_method) &&
        input$fetch_method != "No selection" &&
        input$fetch_method == "By uploading a CSV file") {
@@ -374,13 +397,14 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       
       if(first_logo_move() == TRUE) {
         removeUI("#startup_main")
-      insertUI(selector = ("#sidebar"), where = "beforeEnd", 
+      insertUI(selector = ("#sidebar"), where = "afterBegin", 
                ui = tags$img(src = "logo1resized.png",
                              alt = "The LakeEffects app logo",
                              class = "logo_pics"))
       first_logo_move(FALSE)
       }
-      #^^^^
+
+      browser()
       if(first_move2submit() == TRUE) {
       insertUI(selector = "#main-panel", 
                where = "beforeEnd",
@@ -394,14 +418,22 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       
     }
     
-  } else { 
+  } else {
     
     if(isTruthy(input$fetch_method) &&
        input$fetch_method != "By entering coordinates") {
       removeUI("#fetch_fourth")
     }
     output$click2calc_lake = renderLeaflet({}) 
+    
+    #IF USERS HAVE DATA IN THE TABLE AND THEN FLIP BACK TO NO SELECTION FOR BEARINGS NUMBER, THAT WOULD CRASH THE APP IF THEY THEN TRIED TO HIT GO, SO WE REMOVE THAT BUTTON IN THAT EVENT.
+    if(isTruthy(input$fetch_method) &&
+       isTruthy(input$fetch_num_bearings) &&
+       input$fetch_method == "By entering coordinates" &&
+       input$fetch_num_bearings == "No selection") {
+      removeUI("#enter2calc_godiv")
     }
+  }
   
   most_recent_bearing_num(input$fetch_num_bearings) #Set this to the most recent outcome
   most_recent_lake_choice(input$fetch_lake_choice)
@@ -560,6 +592,12 @@ observeEvent(input$calc_fetch_button, {
     fetch_pal = colorFactor(c("#777677", "#5b0013"),
                 domain = c(TRUE, FALSE))
 
+    result_df = result_df %>% 
+      rowwise() %>% 
+      mutate(dir = bearing_funct(bearing)) %>% 
+      mutate(bearing_dir = paste0(bearing, "° (", dir, ")", collapse = "")) %>% 
+      ungroup()
+
     leafletProxy("click2calc_lake") %>%
       clearGroup("fetch_lines") %>%
       addPolylines(data = result_df$geometry,
@@ -570,13 +608,15 @@ observeEvent(input$calc_fetch_button, {
                    weight = 3,
                    label = lapply(paste0("Segment length: ", round(result_df$length, 2), "m<br>",
                                        "Bearing length: ", round(result_df$total.length, 2), "m<br>",
+                                       "Bearing angle (dir): ", result_df$bearing_dir, "<br>",
                                        "Longest bearing? ", result_df$is_max), HTML)
                    )
 
     output$report_pin_fetch = renderText({
 
       paste0("Fetch for this location: ",
-             round(result_df$max_length[1], 2), " meters")
+             round(result_df$max_length[1], 2), " meters<br>",
+             "Fetch bearing angles (dirs): ", paste0(result_df$bearing_dir[result_df$is_max == TRUE], collapse = ", "))
 
     })
 
@@ -629,6 +669,8 @@ observeEvent(input$calc_fetch_button, {
                              lng = input$enter2calc_lng, 
                              lake = input$fetch_lake_choice), 
                   enter2calc_df()))
+    
+    prev_enter_df_nrows(nrow(enter2calc_df())) #UPDATE THIS FLAG W/ NEW ROW #
       
      }
     } else {
@@ -650,9 +692,15 @@ observeEvent(input$calc_fetch_button, {
     
     dataTableProxy("enter2calc_table") %>% 
       replaceData(enter2calc_df())
+
+    #IF A USER STARTS W/ > 1 ROW AND ENDS WITH == 1 BY DELETING ROWS, WE'D END UP WITH TWO GO BUTTONS. THIS FLAG CHECK HELPS US ENSURE THAT THAT DOESN'T HAPPEN.
+    dupe_flag = isTruthy(prev_enter_df_nrows()) && 
+      prev_enter_df_nrows() > 1 &&
+      nrow(enter2calc_df()) == 1
     
-    if(nrow(enter2calc_df()) == 1) { #ANY OTHER NUMBER HERE AND WE'D GET UI DUPLICATIONS
-      
+    #PUT IN THE GO BUTTON SO USER CAN RUN THE FETCH CALCULATION
+    if(nrow(enter2calc_df()) == 1 && dupe_flag == FALSE) {  #ANY OTHER NUMBER HERE AND WE'D GET UI DUPLICATIONS
+
       insertUI(selector = "#fetch_fourth", 
                ui = div(id = "enter2calc_godiv",
                         actionButton("enter2calc_go", "Calculate fetch!")))
@@ -673,11 +721,15 @@ observeEvent(input$calc_fetch_button, {
   observeEvent(input$remove_selected, {
     
     if(isTruthy(input$enter2calc_table_rows_selected)) {
+      
+      prev_enter_df_nrows(nrow(enter2calc_df())) #STASH THE NUMBER OF ROWS THE DF USED TO HOLD IN A FLAG. SEE NOTE ELSEWHERE FOR WHY.
+      
       enter2calc_df(enter2calc_df()[-input$enter2calc_table_rows_selected, ])
-    }
     
     dataTableProxy("enter2calc_table") %>% 
       replaceData(enter2calc_df())
+    
+    }
     
     removeUI("#calced_df_div")
     
@@ -781,6 +833,12 @@ observeEvent(input$calc_fetch_button, {
         pt_df3$total.length = round(pt_df3$total.length, 1)
         pt_df3$max_length = round(pt_df3$max_length, 2)
         
+        pt_df3 = pt_df3 %>% 
+          rowwise() %>% 
+          mutate(dir = bearing_funct(bearing)) %>% 
+          mutate(bearing_dir = paste0(bearing, "° (", dir, ")", collapse = "")) %>% 
+          ungroup()
+        
         insertUI(selector = "#fetch_fourth", 
                  ui = div(id = "calced_df_div",
                           dataTableOutput("calced_entered_df")))
@@ -789,19 +847,19 @@ observeEvent(input$calc_fetch_button, {
           
           pt_df3 %>% 
             select(-uniq_id, -bearing_lat, -bearing_lng, 
-                   -length, -total.length) %>% 
+                   -length, -total.length, -dir, -bearing) %>% 
             filter(is_max == TRUE) %>% 
             select(-is_max) %>% 
-            distinct(lat, lng, lake, bearing, max_length) %>% 
+            distinct(lat, lng, lake, bearing_dir, max_length) %>% 
             group_by(lat, lng, lake) %>% 
-            mutate(bearing_angles = paste0(bearing, collapse = ", ")) %>% 
+            mutate(bearing_dirs = paste0(bearing_dir, collapse = ",<br>")) %>% 
             ungroup() %>% 
-            distinct(lat, lng, lake, bearing_angles, max_length) %>% 
+            distinct(lat, lng, lake, bearing_dirs, max_length) %>% 
             rename(
             `Point<br>latitude` = lat,
             `Point<br>longitude` = lng,
-            `Lake<br>DOW` = lake,
-            `Bearing<br>angles` = bearing_angles,
+            `Lake<br>DOW #` = lake,
+            `Bearing<br>angles (dirs)` = bearing_dirs,
             `Point's<br>fetch (m)` = max_length,
           ) %>% 
             datatable(escape = FALSE, 
@@ -837,8 +895,6 @@ observeEvent(input$calc_fetch_button, {
     req(input$template_submit)
     req(grepl(".csv", input$template_submit$datapath))
     removeUI("#submitted_DT_div")
-    
-    #^^^^
 
     df = read.csv(input$template_submit$datapath)
     
@@ -1030,6 +1086,12 @@ observeEvent(input$calc_fetch_button, {
           pt_df3$total.length = round(pt_df3$total.length, 1)
           pt_df3$max_length = round(pt_df3$max_length, 2)
           
+          pt_df3 = pt_df3 %>% 
+            rowwise() %>% 
+            mutate(dir = bearing_funct(bearing)) %>% 
+            mutate(bearing_dir = paste0(bearing, "° (", dir, ")", collapse = "")) %>% 
+            ungroup()
+          
           insertUI(selector = "#fetch_fourth", 
                    where = "beforeEnd",
                    ui = div(id = "submitted_results_div",
@@ -1039,19 +1101,19 @@ observeEvent(input$calc_fetch_button, {
           
           pt_df4 = pt_df3 %>% 
             select(-uniq_id, -bearing_lat, -bearing_lng, 
-                   -length, -total.length) %>% 
+                   -length, -total.length, -dir, -bearing) %>% 
             filter(is_max == TRUE) %>% 
             select(-is_max) %>% 
-            distinct(lat, lng, lake, bearing, max_length) %>% 
+            distinct(lat, lng, lake, bearing_dir, max_length) %>% 
             group_by(lat, lng, lake) %>% 
-            mutate(bearing_angles = paste0(bearing, collapse = ", ")) %>% 
+            mutate(bearing_dirs = paste0(bearing_dir, collapse = ",<br>")) %>% 
             ungroup() %>% 
-            distinct(lat, lng, lake, bearing_angles, max_length) %>% 
+            distinct(lat, lng, lake, bearing_dirs, max_length) %>% 
             rename(
               `Point<br>latitude` = lat,
               `Point<br>longitude` = lng,
               `Lake<br>DOW` = lake,
-              `Bearing<br>angles` = bearing_angles,
+              `Bearing<br>angles (dirs)` = bearing_dirs,
               `Point's<br>fetch (m)` = max_length,
             )
           

@@ -1,0 +1,13 @@
+name: LakeEffects
+title: LakeEffects
+username: university-of-minnesota
+account: university-of-minnesota
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12411969
+bundleId: 8950005
+url: https://university-of-minnesota.shinyapps.io/LakeEffects/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: LICENSE|oldui.R
