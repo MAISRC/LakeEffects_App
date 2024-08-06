@@ -24,7 +24,7 @@ server = function(input, output, session) {
 
 output$methods = renderUI({
   
-  if(input$pick_effect != "No selection") {
+  if(input$pick_effect != "--Select from below--") {
     
     removeUI("#startup-header")
     
@@ -32,8 +32,10 @@ output$methods = renderUI({
       
       selectInput("fetch_method", 
                   label = "How'd you like to calculate fetch?", 
-                  choices = c("No selection", "By clicking a map", "By entering coordinates", "By uploading a CSV file"), 
-                  selected = "No selection",
+                  choices = c("--Select from below--", "By clicking a map", "By entering coordinates", "By uploading a CSV file"), 
+                  selected = "--Select from below--",
+                  selectize = F,
+                  size = 4,
                   width = "100%")
       
    # session$sendCustomMessage("fade", list(id = "methods", action = "insert"))
@@ -56,7 +58,7 @@ observeEvent(input$fetch_method, {
                                          lake = character(0))) #TOGGLE THIS BACK ANY TIME THE METHOD CHANGES
   
   if(isTruthy(input$fetch_method) &&
-     input$fetch_method != "No selection") {
+     input$fetch_method != "--Select from below--") {
 
     if(input$fetch_method == "By clicking a map" |
        input$fetch_method == "By entering coordinates") {
@@ -67,10 +69,12 @@ observeEvent(input$fetch_method, {
                where = "beforeEnd",
                ui = div(id = "fetch_first",
                         textInput("fetch_lake_search", 
-                                  "Search for a specific lake here.", 
+                                  div(HTML("Type three or more characters in the box below to start searching for a specific lake. You can search by a lake's name or by its unique identifying number (DOW). <a href = 'https://www.dnr.state.mn.us/lakefind/index.html' target = '_blank'>Use the Minnesota DNR's LakeFinder tool to find a lake's name or number.</a>")), 
                                   value = "")
                         )
                )
+      session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to the bottom as needed.
+      
     } else {
      
     removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
@@ -78,13 +82,14 @@ observeEvent(input$fetch_method, {
       insertUI(selector = "#sidebar", 
                where = "beforeEnd",
                ui = div(id = "fetch_first",
-                        p("If you haven't already, download a template CSV file below.", class = "control-label"),
+                        p("If you haven't already, download a template CSV file below to use this sub-method. Hit the \"Got it!\" button to proceed", class = "control-label"),
                         downloadButton("fetch_template",
                                        label = "Download"),
                         br(),
                         actionButton("fetch_first_proceed", "Got it!")
                )
       )
+      session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
       
     }
   } else { removeUI("#fetch_first"); removeUI("#fetch_second"); removeUI("#fetch_third"); removeUI("#fetch_fourth")
@@ -124,7 +129,7 @@ observeEvent(input$fetch_lake_search, priority = 2, {
       
       choices_done = pull(choices, DOW)
       names(choices_done) = pretty
-      choices_done = c("No selection" = "No selection", choices_done)
+      choices_done = c("--Select from below--" = "--Select from below--", choices_done)
       
       removeUI("#fetch_second"); removeUI("#fetch_third");
       
@@ -137,9 +142,12 @@ observeEvent(input$fetch_lake_search, priority = 2, {
                where = "beforeEnd",
                ui = div(id = "fetch_second", 
                         selectInput(inputId = "fetch_lake_choice",
-                                    label = "Select a lake.", 
+                                    label = "Select a specific lake from the drop-down menu below to proceed.", 
+                                    selectize = FALSE,
+                                    size = 6,
                                     choices = choices_done)
                ))
+      session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
       
     } else { removeUI("#fetch_second"); removeUI("#fetch_third")
       if(isTruthy(input$fetch_method) &&
@@ -154,7 +162,7 @@ observeEvent(input$fetch_lake_search, priority = 2, {
     }
     }
   
-  most_recent_bearing_num("No selection")
+  most_recent_bearing_num("--Select from below--")
   output$dropped_pin_coords = renderText({})
   output$report_pin_fetch = renderText({})
   removeUI("#calced_df_div")
@@ -166,7 +174,7 @@ observeEvent(input$fetch_lake_search, priority = 2, {
 observeEvent(input$fetch_lake_choice, {
 
   if(isTruthy(input$fetch_lake_choice) &&
-     (input$fetch_lake_choice != "No selection")) {
+     (input$fetch_lake_choice != "--Select from below--")) {
     
     removeUI("#fetch_third")
     
@@ -180,17 +188,20 @@ observeEvent(input$fetch_lake_choice, {
          isTruthy(any_non0_bearing())) {
         selected2use = any_non0_bearing() 
       } else {
-        selected2use = "No selection"
+        selected2use = "--Select from below--"
       }
 
     insertUI(selector = "#sidebar", 
              where = "beforeEnd",
              ui = div(id = "fetch_third", 
                       selectInput("fetch_num_bearings", 
-                                  "Select a number of bearings to try.",
-                                   choices = c("No selection", "180", "90", "60", "45", "36", "30", "20", "18", "15", "12", "10", "9", "6", "5", "4", "3", "2", "1"), 
+                                  "To calculate fetch, the app will draw lines outward from your point in a number of specific directions (bearings) until it hits land. Select a number of bearings using the drop-down menu below. A higher number will mean more accurate results, but it will also take longer to calculate.",
+                                  selectize = FALSE,
+                                  size = 6,
+                                   choices = c("--Select from below--", "180", "90", "60", "45", "36", "30", "20", "18", "15", "12", "10", "9", "6", "5", "4", "3", "2", "1"), 
                                   selected = selected2use)
              ))
+    session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
       
   } else { removeUI("#fetch_third"); output$click2calc_lake = renderLeaflet({})
   if(isTruthy(input$fetch_method) &&
@@ -199,7 +210,7 @@ observeEvent(input$fetch_lake_choice, {
     }
    }
   
-  most_recent_bearing_num("No selection")
+  most_recent_bearing_num("--Select from below--")
   output$dropped_pin_coords = renderText({})
   output$report_pin_fetch = renderText({})
   
@@ -219,14 +230,17 @@ observeEvent(input$fetch_first_proceed, {
              where = "beforeEnd",
              ui = div(id = "fetch_third", 
                       selectInput("fetch_num_bearings", 
-                                  "Select a number of bearings to try.",
-                                  choices = c("No selection", "180", "90", "60", "45", "36", "30", "20", "18", "15", "12", "10", "9", "6", "5", "4", "3", "2", "1"), 
-                                  selected = "No selection")
+                                  "To calculate fetch, the app will draw lines outward from your point in a number of specific directions (bearings) until it hits land. Select a number of bearings using the drop-down menu below. A higher number will mean more accurate results, but it will also take longer to calculate.",
+                                  selectize = FALSE,
+                                  size = 6,
+                                  choices = c("--Select from below--", "180", "90", "60", "45", "36", "30", "20", "18", "15", "12", "10", "9", "6", "5", "4", "3", "2", "1"), 
+                                  selected = "--Select from below--")
              ))
+    session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
     
   } else { removeUI("#fetch_third"); removeUI("#fetch_fourth") }
   
-  most_recent_bearing_num("No selection")
+  most_recent_bearing_num("--Select from below--")
   first_move2submit(TRUE) #I BELIEVE THIS IS NEEDED TO ENSURE THAT HITTING THE BUTTON AFTER PICKING THIS SUBMETHOD AND AFTER BRINGING UP FETCH_FOURTH ONCE BUT BEFORE RESELECTING A BEARING NUMBER WILL STILL EVENTUALLY BRING UP FETCH_FOURTH.
   
   removeUI("#calced_df_div")
@@ -240,15 +254,15 @@ observeEvent(input$fetch_first_proceed, {
 observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
 
   if(isTruthy(input$fetch_num_bearings) &&
-     input$fetch_num_bearings != "No selection") {
+     input$fetch_num_bearings != "--Select from below--") {
     
     if(isTruthy(input$fetch_method) &&
-       input$fetch_method != "No selection" &&
+       input$fetch_method != "--Select from below--" &&
        input$fetch_method == "By clicking a map" &&
-       most_recent_bearing_num() == "No selection") { #Only run when switching from No selection to any value.
+       most_recent_bearing_num() == "--Select from below--") { #Only run when switching from No selection to any value.
 
       #IF THEY ARE FIDDLING WITH THE LAKE CHOICE SELECTOR, CLEAR THE MAP OUT
-      if(most_recent_lake_choice() != "No selection" && 
+      if(most_recent_lake_choice() != "--Select from below--" && 
         most_recent_lake_choice() != input$fetch_lake_choice &&
         isTruthy(input$fetch_method) &&
         input$fetch_method != "By entering coordinates") {
@@ -262,6 +276,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                    ui = tags$img(src = "logo1resized.png",
                                  alt = "The LakeEffects app logo",
                                  class = "logo_pics"))
+          session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
           first_logo_move(FALSE)
         }
 
@@ -308,10 +323,10 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
     }
 
     if(isTruthy(input$fetch_method) &&
-       input$fetch_method != "No selection" &&
+       input$fetch_method != "--Select from below--" &&
        input$fetch_method == "By entering coordinates" &&
-       input$fetch_lake_choice != "No selection" &&
-       input$fetch_num_bearings != "No selection" &&
+       input$fetch_lake_choice != "--Select from below--" &&
+       input$fetch_num_bearings != "--Select from below--" &&
        first_enter_fourth() == TRUE) { 
       
       if(first_logo_move() == TRUE) {
@@ -320,6 +335,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                  ui = tags$img(src = "logo1resized.png",
                                alt = "The LakeEffects app logo",
                                class = "logo_pics"))
+        session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
         first_logo_move(FALSE)
       }
       
@@ -333,6 +349,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       insertUI(selector = "#main-panel",
                where = "beforeEnd",
                ui = div(id = "fetch_fourth",
+                        p(id = "enter_pt_info", "For this sub-method, you will first enter points at which to calculate fetch by selecting latitude and longitude values for a given point using the selectors below, then adding that point to your list of points using the button below. If you add a point to your list by mistake, select that point in your list and hit the \"remove\" button to remove it."),
                         numericInput("enter2calc_lat", 
                                      "Enter latitude value",
                                      min = bounds[2], 
@@ -346,7 +363,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                                      max = bounds[3],
                                      step = 0.00001),
                         actionButton("submit_entered_pt", 
-                                     "Add point to table"),
+                                     "Add point to list"),
                         htmlOutput("invalid_pt_warn"),
                         br(),
                         dataTableOutput("enter2calc_table"),
@@ -381,7 +398,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       if(isTruthy(input$fetch_method) &&
          isTruthy(input$fetch_num_bearings) &&
          input$fetch_method == "By entering coordinates" &&
-         input$fetch_num_bearings != "No selection" &&
+         input$fetch_num_bearings != "--Select from below--" &&
          nrow(enter2calc_df()) > 0) {
         removeUI("#enter2calc_godiv") #THERE ARE ALSO CIRCUMSTANCES YOU'D END UP HERE AND THERE ALREADY IS ONE BUTTON, SO THIS ENSURES WE STAY AT 1 IN THOSE CIRCUMSTANCES.
         insertUI(selector = "#fetch_fourth", 
@@ -390,7 +407,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
       }
       
     if(isTruthy(input$fetch_method) &&
-       input$fetch_method != "No selection" &&
+       input$fetch_method != "--Select from below--" &&
        input$fetch_method == "By uploading a CSV file") {
       
       removeUI("#submitted_results_div") #WIPE RESULTS, IF ANY, IF THEY ARE SCREWING AROUND WITH THE NUMBER OF BEARINGS. 
@@ -401,16 +418,16 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
                ui = tags$img(src = "logo1resized.png",
                              alt = "The LakeEffects app logo",
                              class = "logo_pics"))
+      session$sendCustomMessage(type = 'scrollSidebar', message = list()) #Scroll to bottom of sidebar as needed.
       first_logo_move(FALSE)
       }
 
-      browser()
       if(first_move2submit() == TRUE) {
       insertUI(selector = "#main-panel", 
                where = "beforeEnd",
                ui = div(id = "fetch_fourth", 
                         fileInput(inputId = "template_submit", 
-                                  "Upload your template file here. Make sure it is a .csv file and that it contains only columns called \"lat\", \"lng\", \"lake\", just as in the template file.",
+                                  "Upload your file of points at which to calculate fetch using this file selector. Make sure your file is a .csv file and that it contains only columns called \"lat\", \"lng\", \"lake\", just as in the template file.",
                                    accept = ".csv")
                ))
         first_move2submit(FALSE)
@@ -430,7 +447,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
     if(isTruthy(input$fetch_method) &&
        isTruthy(input$fetch_num_bearings) &&
        input$fetch_method == "By entering coordinates" &&
-       input$fetch_num_bearings == "No selection") {
+       input$fetch_num_bearings == "--Select from below--") {
       removeUI("#enter2calc_godiv")
     }
   }
@@ -442,7 +459,7 @@ observeEvent(list(input$fetch_lake_choice,input$fetch_num_bearings), {
   if(isTruthy(input$fetch_method) &&
      isTruthy(input$fetch_num_bearings) &&
      input$fetch_method == "By entering coordinates" &&
-     input$fetch_num_bearings != "No selection") {
+     input$fetch_num_bearings != "--Select from below--") {
     any_non0_bearing(input$fetch_num_bearings)
   }
   
@@ -614,7 +631,8 @@ observeEvent(input$calc_fetch_button, {
 
     output$report_pin_fetch = renderText({
 
-      paste0("Fetch for this location: ",
+      paste0("<span id = 'pin_result_info'>The fetch data you requested are below.</span><br>",
+        "Fetch for this location: ",
              round(result_df$max_length[1], 2), " meters<br>",
              "Fetch bearing angles (dirs): ", paste0(result_df$bearing_dir[result_df$is_max == TRUE], collapse = ", "))
 
@@ -841,27 +859,33 @@ observeEvent(input$calc_fetch_button, {
         
         insertUI(selector = "#fetch_fourth", 
                  ui = div(id = "calced_df_div",
-                          dataTableOutput("calced_entered_df")))
-
-        output$calced_entered_df = renderDT({
-          
-          pt_df3 %>% 
-            select(-uniq_id, -bearing_lat, -bearing_lng, 
-                   -length, -total.length, -dir, -bearing) %>% 
-            filter(is_max == TRUE) %>% 
-            select(-is_max) %>% 
-            distinct(lat, lng, lake, bearing_dir, max_length) %>% 
-            group_by(lat, lng, lake) %>% 
-            mutate(bearing_dirs = paste0(bearing_dir, collapse = ",<br>")) %>% 
-            ungroup() %>% 
-            distinct(lat, lng, lake, bearing_dirs, max_length) %>% 
-            rename(
+                          p(id = "calced_entered_info", 
+                            "The fetch data you requested are below."),
+                          dataTableOutput("calced_entered_df"),
+                          downloadButton("enter_outputs", 
+                                         label = "Download results!")))
+ 
+       pt_df4 = pt_df3 %>% 
+          select(-uniq_id, -bearing_lat, -bearing_lng, 
+                 -length, -total.length, -dir, -bearing) %>% 
+          filter(is_max == TRUE) %>% 
+          select(-is_max) %>% 
+          distinct(lat, lng, lake, bearing_dir, max_length) %>% 
+          group_by(lat, lng, lake) %>% 
+          mutate(bearing_dirs = paste0(bearing_dir, collapse = ",<br>")) %>% 
+          ungroup() %>% 
+          distinct(lat, lng, lake, bearing_dirs, max_length) %>% 
+          rename(
             `Point<br>latitude` = lat,
             `Point<br>longitude` = lng,
             `Lake<br>DOW #` = lake,
             `Bearing<br>angles (dirs)` = bearing_dirs,
             `Point's<br>fetch (m)` = max_length,
-          ) %>% 
+          )
+        
+        output$calced_entered_df = renderDT({
+          
+          pt_df4 %>% 
             datatable(escape = FALSE, 
                       selection = "none",
                       options = list(info = FALSE,
@@ -871,6 +895,14 @@ observeEvent(input$calc_fetch_button, {
                                      lengthChange = FALSE))
           
         })
+        
+        output$enter_outputs = 
+          downloadHandler(filename = "lakeEffects_fetch_outputs.csv", 
+                          function(file) {
+                            
+                            write.csv(pt_df4, file, row.names = FALSE)          
+                            
+                          })
         
         pin_map_waiter$hide()
     
@@ -954,7 +986,7 @@ observeEvent(input$calc_fetch_button, {
         insertUI(selector = "#fetch_fourth", 
                  where = "beforeEnd",
                  ui = div(id = "submitted_DT_div",
-                          p("The data you uploaded are shown below", id = "upload_info"),
+                          p("The data you uploaded are shown below. If you're satisfied, hit the button below to calculate fetch! Note: This process takes about 1 minute per 15 points submitted for 36 bearings, so you may need to limit the number of points or reduce the numbers of bearings to keep runtimes managable!", id = "upload_info"),
                           dataTableOutput("submitted_DT"),
                           actionButton("template_go", 
                                        "Calculate fetch!")))
@@ -1095,9 +1127,10 @@ observeEvent(input$calc_fetch_button, {
           insertUI(selector = "#fetch_fourth", 
                    where = "beforeEnd",
                    ui = div(id = "submitted_results_div",
-                            p("Your calculated fetches are below.", id = "upload_info"),
+                            p("Your calculated fetch data are below.", id = "upload_info"),
                             dataTableOutput("calced_template_df"),
-                            downloadButton("template_outputs")))
+                            downloadButton("template_outputs", 
+                                           label = "Download results!")))
           
           pt_df4 = pt_df3 %>% 
             select(-uniq_id, -bearing_lat, -bearing_lng, 

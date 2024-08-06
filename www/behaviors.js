@@ -30,3 +30,11 @@ $(document).on("keydown", "#fetch_lake_search", function (e) {
     return false;
   }
 });
+
+//Auto-scroll to the bottom of the sidebar, as needed, to ensure the most recent widget is the one users can see.
+Shiny.addCustomMessageHandler('scrollSidebar', function(message) {
+        setTimeout(function() {
+          var sidebar = document.getElementById('sidebar');
+          sidebar.scrollTop = sidebar.scrollHeight;
+        }, 100); // Delay of 100 milliseconds
+      });

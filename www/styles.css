@@ -22,7 +22,7 @@ body {
         width: 100%;
         height: auto;
         overflow-y: auto;
-        margin-bottom: 20vh;
+    /*    margin-bottom: 20vh; */
       }
       
       #main-panel {
@@ -92,6 +92,7 @@ div#startup_main {
   align-items: center;
   padding: 15px;
   margin: 1%;
+  margin-bottom: 20vh;
 }
 
 .logo-display {
@@ -147,10 +148,20 @@ div#sidebar>div, div#sidebar>div>div, div#fetch_fourth>div.form-group {
   width: 100%;
 }
 
-#dropped_pin_coords, #pin_instructions, #upload_info, #template_submit-label {
+#dropped_pin_coords, #pin_instructions, #upload_info, #template_submit-label, #enter_pt_info, #calced_entered_info {
   max-width: 500px !important;
 }
 
 #enter2calc_table {
   min-width: 400px;
+}
+
+span#pin_result_info {
+  font-weight: bold;
+}
+
+option {
+  font-size: large;
+  color: black;
+  text-align: center;
 }
