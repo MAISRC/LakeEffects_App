@@ -1,8 +1,10 @@
+/* ADD OPENSANS FONT FACE */
 @font-face {
   src: url(OpenSans-VariableFont_wdth,wght.tiff);
   font-family: "OpenSans";
 }
 
+/* MAKE ALL APP OFF-WHITE, RED TEXT, OPEN SANS, LARGE FONT, TAKE UP ENTIRE WIDTH */
 body {
   background-color: #FAFAFA;
   color: #7a0019;
@@ -11,32 +13,31 @@ body {
   width: 100%;
 }
 
+/* CUT CONTENT WIDTH TO 88% TO HAVE BORDERS SO IT FITS ON MOBILE SCREENS BETTER. */
 #whole_page {
   width: 88%;
   padding: 5px;
   margin: 2% auto;
 }
 
-/* Mobile-first styles */
+/* MOBILE-FIRST DESIGN: MAKE SIDEBAR 100% WIDTH WITH OVERFLOW */
       #sidebar {
         width: 100%;
         height: auto;
         overflow-y: auto;
-    /*    margin-bottom: 20vh; */
       }
       
+      /* MAKE MAIN PANEL ALSO 100% AND CONSTRAIN CONTENTS TO FIT */
       #main-panel {
         width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
         padding: 10px;
       }
       
-      .logo_pics {
-        max-width: 100%;
-        height: auto;
-      }
-
-/* Styles for larger screens */
+/* USE MEDIA QUERY TO SET SIDEBAR AND MAIN PANEL LAYOUT ON LARGER SCREEN. */
       @media (min-width: 1264px) {
+        /* SIDEBAR GETS 24% OF THE SCREEN, FLOATS LEFT, CAN ONLY BE SO TALL BEFORE OVERFLOW */
         #sidebar {
           height: 88vh;
           max-height: 88vh;
@@ -45,6 +46,7 @@ body {
           float: left;
         }
         
+        /* MAIN PANEL GETS 74%, FLOATS RIGHT VIA WIDE MARGIN, CAN ONLY BE SO TALL BEFORE OVERFLOW */
         #main-panel {
           display: flex;
           width: 74%;
@@ -57,31 +59,29 @@ body {
          justify-content: center;
         }
         
-        .logo_pics {
-          max-width: 100%;
-          height: auto;
-        }
-      }
-      
-/* Fade in/out animation */
-      .fade-enter-active, .fade-leave-active {
-        transition: opacity 0.5s;
-      }
-      .fade-enter, .fade-leave-to {
-        opacity: 0;
-      }
 
+      }
+     
+      /* AUTO-SHRINK THE LOGO STUFF TO FIT */ 
+.logo_pics {
+   max-width: 100%;
+   height: auto;
+}
+
+  /* EXPAND THE SIZE OF THE SPINNER IN ALL THE WAITERS TO BE MORE SUBSTANTIAL */
 .loaderz-07 {
   width: 150px !important;  
   height: 150px !important; 
   border-width: 10px !important; 
 }
 
+      /* ENSURE THE START-UP LOGOS ARE CENTERED AND FIT COMFORTABLY IN THEIR DIV */
 div#startup_main {
   margin: 10px auto;
   text-align: center;
 }
 
+      /* SIDEBAR STYLING--GRAYISH BACKGROUND, YELLOW BORDER, COLUMN FLEX, CENTERING, AND PADDING, WITH A BOTTOM MARGIN */
 #sidebar {
   background-color: #f9f7f6;
   border: 2px solid #ffb71e;
@@ -95,15 +95,18 @@ div#startup_main {
   margin-bottom: 20vh;
 }
 
+      /* MAKE STARTUP LOGO TEXT HEADERS INLINE INSTEAD OF BLOCK */
 .logo-display {
   display: inline !important;
 }
 
+      /* ADD MARGINS ABOVE AND BELOW LOGO PICS */
 .logo-pics {
   margin-top: 10px;
   margin-bottom: 10px;
 }
 
+      /* BUTTON STYLING -- SET TEXT COLOR/SIZE/WIDTH, BORDER, SIZING, NO LINK BEHAVIOR, ETC. */
 .btn-default:not(.btn-file) {
  color: #7a0019;
  font-weight: bold;
@@ -118,15 +121,13 @@ div#startup_main {
  margin: 5px auto;
 }
 
+      /* BUTTON HOVER INDICATORS */
 .btn-default:not(.btn-file):hover {
   background-color: #900021;
   color: white 
 }
 
-.btn.disabled {
-  color: gray;
-}
-
+      /* CUSTOM LINK STYLING */
 a {
   color: #e19900;
   text-decoration: underline;
@@ -140,26 +141,27 @@ a:visited {
   color: #e19900;
 }
 
-.control-label {
+      /* SOME INPUT LABELS WON'T BE BOLDED BY DEFAULT W/O THIS (CAN'T REMEMBER WHICH) */
+.control-label, span#pin_result_info {
   font-weight: bold;
 }
 
-div#sidebar>div, div#sidebar>div>div, div#fetch_fourth>div.form-group {
+      /* ENSURE ALL SIDEBAR DIVS FILL ENTIRE WIDTH */
+div#sidebar>div, div#sidebar>div>div, div#fetch_fourth>div.form-group, p#no_results_info {
   width: 100%;
 }
 
+      /* ENSURE FETCH FOURTH MAIN PANEL TEXT BOXES DON'T GET OVERWIDE COMPARED TO OTHER ELEMENTS THERE */
 #dropped_pin_coords, #pin_instructions, #upload_info, #template_submit-label, #enter_pt_info, #calced_entered_info {
   max-width: 500px !important;
 }
 
+      /* ENSURE THE FETCH FOURTH ENTER SUBMETHOD TABLES DON'T GET AWKWARDLY NARROW */
 #enter2calc_table {
   min-width: 400px;
 }
 
-span#pin_result_info {
-  font-weight: bold;
-}
-
+/* CUSTOM NON-SELECTIZE INPUTS STYLINGS */
 option {
   font-size: large;
   color: black;

@@ -3,15 +3,16 @@ ui = fluidPage(id = "whole_page",
 
 # Head content and hooplah ------------------------------------------------
 
-  
+  ##LINK TO STYLES AND BEHAVIORS FILES
   tags$head(
     tags$link(href = "styles.css", rel = "stylesheet"),
     tags$script(src = "behaviors.js")
   ),
   
-  useWaiter(),
+  useWaiter(), #TURN ON WAITER PACKAGE FEATURES
   
-  disconnectMessage(text = "Hmm...something has gone wrong. Either you have been idle for too long and the app has timed out or an error has been triggered in the R code of the application. To try again, refresh the page. If, after doing so, you encounter this page again after taking the same actions as before, please file a bug report with Alex at bajcz003@umn.edu. We appreciate your cooperation!", 
+ #CREATE CUSTOM DISCONNECT MESSAGE.
+  disconnectMessage(text = "Hmm...something has gone haywire! Either you have been idle for too long and the app has timed out (this occurs after about 10 minutes), or an error has occurred in our R code, triggering a shutdown. To proceed, refresh the page. If, after doing so, you encounter this message again after taking the same actions as before, please file a bug report with Alex at bajcz003@umn.edu. Thanks!", 
                     refresh = "Refresh the page", 
                     width = "full", 
                     top = "center", 
@@ -24,14 +25,16 @@ ui = fluidPage(id = "whole_page",
 
 # Actual content ----------------------------------------------------------
 
-  
-  
+#DIVIDE PAGE INTO TWO PANELS
   div(id = "both_panels",
     
+      #SIDEBAR PANEL WILL HOLD METHOD/SUBMETHOD INPUT WIDGETS
     div(id = "sidebar",
+        #START WITH AN INDICATOR POINTING USERS TO START HERE.
         div(id = "startup-header", 
             h2("👇     Start here     👇"),
             br()),
+        #FIRST INPUT WIDGET--WHAT "EFFECT" DOES THE USER WANT?
       selectInput("pick_effect",
                   "Pick your effect--what type of spatial operation do you want to perform?", 
                   choices = c("--Select from below--", "Calculate fetch"), 
@@ -42,6 +45,7 @@ ui = fluidPage(id = "whole_page",
       uiOutput("methods")
     ),
     
+    #MAIN PANEL BEGINS WITH LOGOS, VERSION INFO, FUNDING INFO, ETC.
     div(id = "main-panel",
       div(id = "startup_main",
       tags$img(src = "logo1resized.png", alt = "The LakeEffects app logo", class = "logo_pics"),
@@ -51,7 +55,7 @@ ui = fluidPage(id = "whole_page",
       img(src = "jointlogoresized.png", class = "logo_pics"),
       br(),
       br(),
-      HTML("<i><h5>App Version 0.0.5. Last updated 8/6/24. Developed by Dr. Alex Bajcz, Quantitative Ecologist for MAISRC. Funding for this work was provided by the Minnesota Environment and Natural Resources Trust Fund as recommended by the Minnesota Aquatic Invasive Species Research Center (MAISRC) and the Legislative-Citizen Commission on Minnesota Resources (LCCMR) and also the State of Minnesota.</i></h5>")
+      HTML("<i><h5>App Version 0.0.6. Last updated 8/9/24. Developed by Dr. Alex Bajcz, Quantitative Ecologist for MAISRC. Funding for this work was provided by the Minnesota Environment and Natural Resources Trust Fund as recommended by the Minnesota Aquatic Invasive Species Research Center (MAISRC) and the Legislative-Citizen Commission on Minnesota Resources (LCCMR) and also the State of Minnesota.</i></h5>")
       )
       
     )
